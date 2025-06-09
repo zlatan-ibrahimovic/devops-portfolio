@@ -1,0 +1,113 @@
+default:
+  tags:
+    - henriFrank
+  interruptible: true
+
+
+include:
+  - project: iam/secrets/conjur-secrets-gitlab-vals
+    ref: v3.1.1
+    file: gitlab/conjur_include.yml
+
+variables:
+  KUBECONFIG_cluster_test: ref+conjur://Vault/commun/kubernetes_cluster-test.value
+  DEFAULT_REGISTRY: "docker-dev-virtual.repository.home.intra"
+  TEAM_NAME: "henriFrank"
+  CI_COMMIT_TAG: ${IMAGE_TAG_SNAPSHOT}
+  NPM_REGISTRY: "http://artefact-repo.home.intra/artifactory/api/npm/npm-public"
+
+.common:
+  tags:
+    - &TAG_PIPELINE_BUILD docker-build
+
+stages:
+  - semantic-release
+  - build-and-publish-image
+  - server-deploy-dev
+
+
+semantic-release:
+  image: henriFrank/semantic-release:1.0.0
+  stage: semantic-release
+  before_script:       
+    - npm config set registry="http://artefact-repo.home.intra/artifactory/api/npm/npm-public"
+    - export GITLAB_TOKEN=$GROUP_API_TOKEN
+  script:
+    - npx semantic-release -r "http://git-scm.home.intra/henriFrank/gxx/gxx-tools/lighthouse-server.git"
+    - export latest_tag=$(git describe --tags --abbrev=0)
+    - latest_tag=$(echo "$latest_tag" | sed 's/^v//')
+    - echo "$latest_tag"
+    - echo $latest_tag > version.txt
+  artifacts:
+    paths:
+      - version.txt
+
+.docker-build:
+  tags:
+    - *TAG_PIPELINE_BUILD
+  image: docker:20.10.16
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - unknown_failure
+      - api_failure
+  services:
+    - name: docker:20.10.16-dind
+      command:
+        [
+          "--tls=false",
+          "--registry-mirror",
+          "https://docker-dev-virtual.repository.home.intra/",
+          "--insecure-registry",
+          "docker-dev-virtual.repository.home.intra",
+          "--insecure-registry",
+          "docker-outils-local.repository.home.intra",
+        ]
+
+docker-build-and-publish-image:
+  stage: build-and-publish-image
+  image: docker:20.10.16
+  extends: .docker-build
+  before_script:
+    - docker login -u ${ARTI_USER_DEPLOY} -p ${ARTI_PASSWORD_DEPLOY} ${DEFAULT_REGISTRY}
+    - export latest_tag=$(cat version.txt)
+  script:
+    - echo $latest_tag
+    - docker build --network=host --label version=${latest_tag} -f Dockerfile -t ${DEFAULT_REGISTRY}/henriFrank/lhci-server":${latest_tag}" .
+    - docker push ${DEFAULT_REGISTRY}/henriFrank/lhci-server":${latest_tag}"
+  only:
+    - tags
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - unknown_failure
+      - api_failure
+  needs:
+    - job: semantic-release
+  artifacts:
+    paths:
+      - "${DIRECTORY}-$CI_COMMIT_SHORT_SHA"
+      - version.txt
+
+
+lighthouse_server_deploy:
+  stage: server-deploy-dev
+  image: bitnami/kubectl:1.22.13
+  before_script:
+    - export KUBECONFIG=$KUBECONFIG_cluster_test
+    - export latest_tag=$(cat version.txt)
+  script:
+    - echo $latest_tag
+    - sed -i "s#VERSION_IMAGE#${latest_tag}#" deploiement/base/deployment.yaml
+    - kubectl kustomize deploiement/overlays/va
+    - kubectl apply -k deploiement/overlays/va
+  only:
+    - tags
+  needs:
+    - !reference [ .use_secrets, needs ]
+    - job: docker-build-and-publish-image
+  extends:
+    - .use_secrets
+

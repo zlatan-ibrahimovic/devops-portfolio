@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: reports-pvc
+  namespace: devops-namespace
+  annotations:
+    owner: Henri-Frank
+  labels:
+    app: green-it-server
+    code-composant: xx666
+    sous-composant: green-it-server
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 6Gi

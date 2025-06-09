@@ -1,0 +1,13 @@
+{
+  "name": "lighthouse-server",
+  "version": "1.0.0",
+  "description": "Description de votre projet",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Erreur : aucun test spécifié\" && exit 1"
+  },
+  "keywords": [],
+  "author": "henriFrank",
+  "license": "ISC"
+}
+

@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: green-it-server-ingress
+  namespace: devops-namespace
+  annotations:
+    owner: Henri-Frank
+  labels:
+    app: green-it-server
+    code-composant: xx666
+    sous-composant: green-it-server
+spec:
+  rules:
+    - host: green-it-server.kluster.host
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: green-it-server
+                port:
+                  number: 80

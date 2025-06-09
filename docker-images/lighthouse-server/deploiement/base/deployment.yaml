@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lhci-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lhci-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lhci-server
+  template:
+    metadata:
+      labels:
+        app: lhci-server
+    spec:
+      containers:
+        - name: lhci-server
+          image: docker-dev-virtual.repository.home.intra/henriFrank/lhci-server:VERSION_IMAGE
+          ports:
+            - containerPort: 9001
+          volumeMounts:
+            - name: lhci-data
+              mountPath: /data
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 1Gi
+            requests:
+              cpu: 250m
+              memory: 64Mi
+      volumes:
+        - name: lhci-data
+          persistentVolumeClaim:
+            claimName: lhci-data-pvc
