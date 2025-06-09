@@ -1,0 +1,5 @@
+DOCKER_IMAGE_NAME: ton-id/ton-image
+DOCKER_IMAGE_TAG: latest
+DOCKERFILE_PATH: docker/
+DOCKER_REGISTRY_USERNAME: ((docker_username))
+DOCKER_REGISTRY_PASSWORD: ((docker_password))

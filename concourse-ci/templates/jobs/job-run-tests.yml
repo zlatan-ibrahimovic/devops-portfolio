@@ -1,0 +1,6 @@
+name: run-tests
+plan:
+  - get: repo
+    trigger: true
+  - task: run-tests
+    file: repo/concourse-ci/templates/tasks/task-run-tests.yml

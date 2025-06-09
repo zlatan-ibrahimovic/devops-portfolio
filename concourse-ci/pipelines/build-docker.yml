@@ -1,0 +1,27 @@
+resources:
+  - name: repo
+    type: git
+    source:
+      uri: https://github.com/zlatan-ibrahimovic/devops-portfolio.git
+      branch: main
+
+  - name: docker-image
+    type: registry-image
+    source:
+      repository: ((DOCKER_IMAGE_NAME))
+      username: ((DOCKER_REGISTRY_USERNAME))
+      password: ((DOCKER_REGISTRY_PASSWORD))
+
+jobs:
+  - name: build-and-push-docker
+    plan:
+      - get: repo
+        trigger: true
+      - task: build-docker
+        file: repo/concourse-ci/templates/tasks/task-build-docker.yml
+        params:
+          DOCKER_IMAGE_NAME: ((DOCKER_IMAGE_NAME))
+          DOCKER_IMAGE_TAG: ((DOCKER_IMAGE_TAG))
+      - put: docker-image
+        params:
+          image: image/image.tar

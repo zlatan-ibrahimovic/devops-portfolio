@@ -7,6 +7,9 @@ jobs:
   - name: deploy-to-k8s
     plan:
       - get: git-repo
+        trigger: true
+      - task: apply-k8s
+        file: repo/concourse-ci/templates/tasks/task-kubectl-apply.yml
       - task: deploy
         config:
           platform: linux
