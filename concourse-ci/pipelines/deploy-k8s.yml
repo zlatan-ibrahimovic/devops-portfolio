@@ -1,0 +1,21 @@
+resources:
+  - name: git-repo
+    type: git
+    source:
+      uri: https://github.com/zlatan-ibrahimovic/devops-portfolio.git
+jobs:
+  - name: deploy-to-k8s
+    plan:
+      - get: git-repo
+      - task: deploy
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source: { repository: bitnami/kubectl }
+          run:
+            path: sh
+            args:
+              - -exc
+              - |
+                kubectl apply -f git-repo/kustomize/overlays/staging/
