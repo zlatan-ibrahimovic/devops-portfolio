@@ -1,0 +1,3 @@
+- op: replace
+  path: /spec/rules/0/host
+  value: lighthouse-server-gxx.cluster-test.k8s.home.intra

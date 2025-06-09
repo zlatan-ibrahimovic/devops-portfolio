@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: lhci-server-service
+spec:
+  selector:
+    app: lhci-server
+  ports:
+    - protocol: TCP
+      port: 9001
+      targetPort: 9001

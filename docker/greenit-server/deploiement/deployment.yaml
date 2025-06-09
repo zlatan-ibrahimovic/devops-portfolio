@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: green-it-server
+  namespace: devops-namespace
+  annotations:
+    owner: Henri-Frank
+  labels:
+    app: green-it-server
+    code-composant: xx666
+    sous-composant: green-it-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: green-it-server
+  template:
+    metadata:
+      labels:
+        app: green-it-server
+    spec:
+      containers:
+        - name: green-it-server
+          image: filebrowser/filebrowser
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - mountPath: /srv
+              name: reports-volume
+          env:
+            - name: FB_AUTH_PASS
+              value: "admin" # Mot de passe pour l'utilisateur admin
+            - name: FB_AUTH_METHOD
+              value: "noauth"
+      volumes:
+        - name: reports-volume
+          persistentVolumeClaim:
+            claimName: reports-pvc
