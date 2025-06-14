@@ -1,0 +1,28 @@
+default:
+  tags:
+    - $NOM_EQUIPE
+  interruptible: true
+
+include:
+  - local: 'variables/defaults.yml'
+  - local: 'templates/semantic-release.yml'
+
+
+
+stages:
+  - semantic-release
+
+variables:
+  TEAM_NAME: "devops"
+  KEY_PEM: ${KEY_PEM}
+  CERTIFICATE_PEM: ${CERTIFICATE_PEM}
+  URL_REPOS: "http://git-scm.intra/devops/portfolio/portfolio-tools/common-pipeline.git"
+
+.common:
+  tags:
+    - &TAG_PIPELINE_BUILD docker-build
+
+semantic-release:
+  extends: .semantic
+
+

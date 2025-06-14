@@ -1,0 +1,142 @@
+.deploy:
+  stage: deploy
+  image: $HELM_IMAGE
+  variables:
+    HELM_RELEASE_NAME: "$CI_PROJECT_NAME"
+  script:
+    - export IMAGE_TAG=$(cat version.txt)
+    - helm upgrade ... --namespace $ENVIRONMENT -f infra-as-code/.../values.yaml
+  environment:
+    name: $ENVIRONMENT
+  when: on_success
+  only:
+    - tags
+
+
+.helm-deployment-dev:
+  extends:
+    - .use_secrets
+  image: pe/kubectl_helm:1.23.7-3.8.0
+  variables:
+    HELM_CHART_REPO: pe/sld-ng
+    HELM_VERSION: 2.52.0
+    TIMEOUT: 2m0s
+    NAMESPACE: gouvernance-architecture-applicative-sddc
+    HISTORY_MAX: 10
+  before_script:
+    - export KUBECONFIG=$KUBECONFIG_Z6_DEV
+    - ls .secrets
+  script:
+    - echo "Deploy dev..."
+    - helm repo add pe https://repository.intra/artifactory/helm-dev-virtual
+    - helm repo update
+    - export IMAGE_TAG=$(cat version.txt)
+    - echo $IMAGE_TAG
+    - sed -i "s#VERSION_TAG#${IMAGE_TAG}#" infra-as-code/environnements/dev/values.yaml
+    - export VALUES_FILE_PATH=infra-as-code/environnements/dev/values.yaml
+    - |
+      if [ ! -f "$VALUES_FILE_PATH" ]; then
+        echo "Erreur: Le fichier $VALUES_FILE_PATH est introuvable."
+        exit 1
+      fi
+    - echo "Exécution de la commande Helm upgrade/install..."
+    - |
+      helm upgrade "$HELM_RELEASE_NAME" "$HELM_CHART_REPO" --install --namespace "$NAMESPACE" -f "$VALUES_FILE_PATH" --wait --atomic --version "$HELM_VERSION" --timeout "$TIMEOUT" --history-max "$HISTORY_MAX" --set image.tag="$IMAGE_TAG" | tee /tmp/helm_upgrade.log
+    - echo "La commande Helm s'est exécutée avec succès."
+  environment:
+    name: dev
+  needs:
+    - build-and-publish-image
+    - !reference [.use_secrets, needs]
+  when: on_success
+  only:
+    - tags
+  artifacts:
+    paths:
+      - version.txt
+
+
+.helm-deployment-va:
+  extends:
+    - .use_secrets
+  image: pe/kubectl_helm:1.23.7-3.8.0
+  variables:
+    HELM_CHART_REPO: pe/sld-ng
+    HELM_VERSION: 2.52.0
+    TIMEOUT: 2m0s
+    NAMESPACE: gouvernance-architecture-applicative-va
+    HISTORY_MAX: 10
+  before_script:
+    - export KUBECONFIG=$KUBECONFIG_Z6_PREPROD
+    - ls .secrets
+  script:
+    - echo "Deploy va..."
+    - helm repo add pe https://repository.intra/artifactory/helm-dev-virtual
+    - helm repo update
+    - export IMAGE_TAG=$(cat version.txt)
+    - echo $IMAGE_TAG
+    - sed -i "s#VERSION_TAG#${IMAGE_TAG}#" infra-as-code/environnements/va/values.yaml
+    - export VALUES_FILE_PATH=infra-as-code/environnements/va/values.yaml
+    - |
+      if [ ! -f "$VALUES_FILE_PATH" ]; then
+        echo "Erreur: Le fichier $VALUES_FILE_PATH est introuvable."
+        exit 1
+      fi
+    - echo "Exécution de la commande Helm upgrade/install..."
+    - |
+      helm upgrade "$HELM_RELEASE_NAME" "$HELM_CHART_REPO" --install --namespace "$NAMESPACE" -f "$VALUES_FILE_PATH" --wait --atomic --version "$HELM_VERSION" --timeout "$TIMEOUT" --history-max "$HISTORY_MAX" --set image.tag="$IMAGE_TAG" | tee /tmp/helm_upgrade.log
+    - echo "La commande Helm s'est exécutée avec succès."
+  environment:
+    name: va
+  needs:
+    - job: e2e-dev
+    - !reference [.use_secrets, needs]
+  when: on_success
+  only:
+    - tags
+  artifacts:
+    paths:
+      - "${DIRECTORY}-$CI_COMMIT_SHORT_SHA"
+      - version.txt
+
+
+
+.helm-deployment-prod:
+  extends:
+    - .use_secrets
+  image: chatwork/helmfile:0.162.0-3.14.2
+  variables:
+    NAMESPACE: gouvernance-architecture-applicative
+    HISTORY_MAX: 10
+  before_script:
+    - export KUBECONFIG=$KUBECONFIG_Z6_PROD
+    - ls .secrets
+  script:
+    - echo "Deploy prod..."
+    - helm repo add pe https://repository.intra/artifactory/helm-dev-virtual --insecure-skip-tls-verify
+    - helm repo update
+    - export IMAGE_TAG=$(cat version.txt)
+    - echo $IMAGE_TAG
+    - sed -i "s#VERSION_TAG#${IMAGE_TAG}#" infra-as-code/environnements/prod/values.yaml
+    - export VALUES_FILE_PATH=infra-as-code/environnements/prod/values.yaml
+    - |
+      if [ ! -f "$VALUES_FILE_PATH" ]; then
+        echo "Erreur: Le fichier $VALUES_FILE_PATH est introuvable."
+        exit 1
+      fi
+    - echo "Exécution de la commande Helm upgrade/install..."
+    - |
+      helm upgrade "$HELM_RELEASE_NAME" "$HELM_CHART_REPO" --install --namespace "$NAMESPACE" -f "$VALUES_FILE_PATH" --wait --atomic --version "$HELM_VERSION" --timeout "$TIMEOUT" --history-max "$HISTORY_MAX" --set image.tag="$IMAGE_TAG" --insecure-skip-tls-verify | tee /tmp/helm_upgrade.log
+    - echo "La commande Helm s'est exécutée avec succès."
+  environment:
+    name: prod
+  needs:
+    - !reference [.use_secrets, needs]
+    - job: e2e-dev
+    - job: e2e-va
+  when: manual
+  only:
+    - tags
+  artifacts:
+    paths:
+      - version.txt

@@ -1,0 +1,36 @@
+.build-test-with-mvn-for-dev:
+  stage: build-and-publish-image
+  extends:
+    - .docker-service
+  tags:
+    - docker-run
+  script:
+    - echo "Running tests for dev..."
+    - mvn clean test -Duser.language=fr -Duser.country=FR
+    - echo $CI_COMMIT_BRANCH
+    - echo $CI_PIPELINE_SOURCE
+  artifacts:
+    paths:
+      - target/jacoco-report
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_BRANCH != null'
+      when: always
+
+
+.build-test-with-mvn:
+  stage: build-and-publish-image
+  extends:
+    - .docker-service
+  tags:
+    - docker-run
+  before_script:
+    - export latest_tag=$(cat version.txt)
+  script:
+    - echo "Running tests..."
+    - mvn clean test -Duser.language=fr -Duser.country=FR
+  artifacts:
+    paths:
+      - target/jacoco-report
+      - version.txt
+  only:
+    - tags

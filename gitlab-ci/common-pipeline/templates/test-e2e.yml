@@ -1,0 +1,22 @@
+
+.e2e-dev:
+  variables:
+    CYPRESS_TARGET_ENV: dev
+  extends:
+    .launch_e2e_and_save_result_into_artefact
+  only:
+    - tags
+  artifacts:
+    paths:
+      - version.txt
+
+.e2e-va:
+  variables:
+    CYPRESS_TARGET_ENV: va
+  extends:
+    .launch_e2e_and_save_result_into_artefact
+  only:
+    - tags
+  artifacts:
+    paths:
+      - version.txt

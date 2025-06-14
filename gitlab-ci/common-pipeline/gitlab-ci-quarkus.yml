@@ -1,0 +1,117 @@
+default:
+  tags:
+    - $NOM_EQUIPE
+  interruptible: true
+
+image:
+  name: docker-dev-virtual.repository.intra/maven/docker-pe-maven-3.8.6-jdk-17-owasp:1.0.0
+  entrypoint:
+    ["/bin/bash", "-c", "ln -snf /bin/bash /bin/sh && /bin/bash -c $0"]
+
+.docker-service:
+  services:
+    - name: docker:20.10.16-dind
+      # THIS IS IMPORTANT!
+      command:
+        [
+          "--tls=false",
+          "--registry-mirror",
+          "https://docker-dev-virtual.repository.intra/",
+          "--insecure-registry",
+          "docker-dev-virtual.repository.intra",
+          "--insecure-registry",
+          "docker-outils-local.repository.intra",
+        ]
+
+include:
+  - local: 'variables/defaults.yml'
+  - local: 'templates/semantic-release.yml'
+  - local: 'templates/sonar.yml'
+  - local: 'templates/build-image.yml'
+  - local: 'templates/deploy-environment.yml'
+  - local: 'templates/test-mvn.yml'
+  - local: 'templates/test-e2e.yml'
+  - project: iam/secrets/conjur-secrets-gitlab-vals
+    ref: v3.0.0
+    file: gitlab/conjur_include.yml
+  - project: devops/portfolio/front-portfolio-angular-e2e
+    ref: master
+    file: e2e-ci.yml
+
+
+stages:
+  - semantic-release
+  - build-and-publish-image
+  - dev
+  - va
+  - prod
+
+
+
+.common:
+  tags:
+    - &TAG_PIPELINE_BUILD docker-build
+
+semantic-release:
+  extends: .semantic
+
+get-last-tag:
+  extends: .get-last-tag
+
+sonar-analysis-and-security-analysis-for-dev:
+  stage: build-and-publish-image
+  extends:
+    - .sonar-analysis-and-security-analysis-for-dev
+
+build-test-with-mvn-for-dev:
+  stage: build-and-publish-image
+  extends:
+    - .build-test-with-mvn-for-dev
+
+sonar-analysis-and-security-analysis:
+  stage: build-and-publish-image
+  extends:
+    - .sonar-analysis-and-security-analysis
+
+build-test-with-mvn:
+  stage: build-and-publish-image
+  extends:
+    - .build-test-with-mvn
+
+build-and-publish-image:
+  stage: build-and-publish-image
+  extends:
+    - .build-and-publish-image
+
+helm-deployment-dev:
+  stage: dev
+  extends:
+    - .helm-deployment-dev
+
+e2e-dev:
+  stage: dev
+  extends:
+    .e2e-dev
+  needs:
+    - job: helm-deployment-dev
+  when: on_success
+
+helm-deployment-va:
+  stage: va
+  extends:
+    - .helm-deployment-va
+
+e2e-va:
+  stage: va
+  extends:
+    .e2e-va
+  needs:
+    - job: helm-deployment-va
+  when: on_success
+
+helm-deployment-prod:
+  stage: prod
+  extends:
+    - .helm-deployment-prod
+
+

@@ -1,0 +1,31 @@
+.semantic:
+  image: devops/semantic-release:1.0.0
+  stage: semantic-release
+  before_script:
+    - npm config set registry=$NPM_REGISTRY
+    - export GITLAB_TOKEN=$GROUP_API_TOKEN
+  script:
+    - echo "$URL_REPOS"
+    - npx semantic-release -r $URL_REPOS
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_COMMIT_TAG == null'
+      when: always
+    - when: never
+
+
+.get-last-tag:
+  image: devops/semantic-release:1.0.0
+  stage: semantic-release
+  before_script:
+    - npm config set registry=$NPM_REGISTRY
+    - export GITLAB_TOKEN=$GROUP_API_TOKEN
+  script:
+    - export latest_tag=$(git describe --tags --abbrev=0)
+    - latest_tag=$(echo "$latest_tag" | sed 's/^v//')
+    - echo "$latest_tag"
+    - echo $latest_tag > version.txt
+  artifacts:
+    paths:
+      - version.txt
+  only:
+    - tags

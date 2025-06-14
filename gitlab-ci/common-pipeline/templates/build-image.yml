@@ -1,0 +1,33 @@
+
+.docker-build:
+  extends: .docker-service
+  image: docker:20.10.16
+  tags:
+    - docker-build
+  script:
+    - export latest_tag=$(cat version.txt)
+    - echo $latest_tag
+    - echo "Building docker image..."
+    - docker build --network=host --label version=${latest_tag} --build-arg VERSION=${latest_tag} -f Dockerfile -t "${DOCKER_REGISTRY_URL}/${TEAM_NAME}/${IMAGE_NAME}:${latest_tag}" .
+    - echo "Pushing docker image..."
+    - docker push "${DOCKER_REGISTRY_URL}/${TEAM_NAME}/${IMAGE_NAME}:${latest_tag}"
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - unknown_failure
+      - api_failure
+
+.build-and-publish-image:
+  extends:
+    - .docker-build
+  needs:
+    - job: build-test-with-mvn
+  when: on_success
+  only:
+    - tags
+  artifacts:
+    paths:
+      - "${DIRECTORY}-$CI_COMMIT_SHORT_SHA"
+      - version.txt
+

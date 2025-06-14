@@ -1,0 +1,64 @@
+.sonar:
+  stage: build-and-publish-image
+  extends: .docker-service
+  tags:
+    - docker-run
+  script:
+    - echo $latest_tag
+    - echo "Running sonar checks for dev.."
+    - echo $CI_PIPELINE_SOURCE
+    - mvn package --errors --fail-at-end -Dquarkus.container-image.build=false -Dquarkus.container-image.push=false
+      org.owasp:dependency-check-maven:8.3.1:check
+      -Dversion=$latest_tag
+      -Dformat=ALL
+      -DretireJsAnalyzerEnabled=false
+      -DossindexAnalyzerEnabled=false
+      -DcveUrlModified=http://artefact-repo.intra/artifactory/nvd-nist-gov-Proxy/feeds/json/cve/1.1/nvdcve-1.1-modified.json.gz
+      -DcveUrlBase=http://artefact-repo.intra/artifactory/nvd-nist-gov-Proxy/feeds/json/cve/1.1/nvdcve-1.1-%d.json.gz
+      -DsuppressionFiles=dependency-cpe-suppression.xml
+      -DknownExploitedEnabled=false
+      -Duser.language=fr
+      -Duser.country=FR
+      sonar:sonar
+      -Dsonar.host.url=http://sonar.fab-outils.k8s.intra/
+      -Dsonar.coverage.jacoco.xmlReportPaths=./target/jacoco-report/jacoco.xml
+      -Dsonar.dependencyCheck.htmlReportPath=./target/dependency-check-report.html
+      -Dsonar.dependencyCheck.jsonReportPath=./target/dependency-check-report.json
+      -Dsonar.dependencyCheck.securityHotspot=true
+      -Dsonar.language=java
+      -Dsonar.sourceEncoding=UTF-8
+      -Dsonar.projectKey=$SONAR_PROJECT_KEY
+    # -Dquarkus.smallrye-openapi.servers=${SERVER_URL}  allow_failure: true
+
+
+.sonar-analysis-and-security-analysis-for-dev:
+  extends:
+    - .sonar
+  before_script:
+    - export latest_tag=$CI_COMMIT_BRANCH
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar" # Defines the location of the analysis task cache
+    GIT_DEPTH: "0" # Tells git to fetch all the branches of the project, required by the analysis task
+  allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_BRANCH != null'
+      when: always
+  artifacts:
+    paths:
+      - "${DIRECTORY}-$CI_COMMIT_SHORT_SHA"
+
+.sonar-analysis-and-security-analysis:
+  extends:
+    - .sonar
+  before_script:
+    - export latest_tag=$(cat version.txt)
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar" # Defines the location of the analysis task cache
+    GIT_DEPTH: "0" # Tells git to fetch all the branches of the project, required by the analysis task
+  allow_failure: true
+  only:
+    - tags
+  artifacts:
+    paths:
+      - "${DIRECTORY}-$CI_COMMIT_SHORT_SHA"
+      - version.txt

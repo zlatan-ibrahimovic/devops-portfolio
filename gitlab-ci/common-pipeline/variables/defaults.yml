@@ -1,0 +1,22 @@
+variables:
+  IMAGE_REGISTRY: "docker-dev-virtual.repository.intra"
+  MAVEN_IMAGE: "docker-pe-maven:3.8.6-jdk-17"
+  HELM_IMAGE: "pe/kubectl_helm:1.23.7-3.8.0"
+  IMAGE_NAME: ""
+  TEAM_NAME: "devops"
+  CI_PIPELINE_TIMEOUT: "30m"
+  NPM_REGISTRY: "http://artefact-repo.intra/artifactory/api/npm/npm-public"
+  DOCKER_DRIVER: overlay2
+  KUBECONFIG_Z6_DEV: ref+conjur://Vault/commun/kubernetes_cluster-dev.value
+  KUBECONFIG_Z6_PREPROD: ref+conjur://Vault/commun/kubernetes_cluster-preprod.value
+  KUBECONFIG_Z6_PROD: ref+conjur://Vault/commun/kubernetes_cluster-prod-mop.value
+  DOCKER_REGISTRY_URL: docker-dev-virtual.repository.intra
+  DOCKER_HOST: tcp://docker:2375
+  HELM_CHART_REPO: pe/sld-ng
+  HELM_VERSION: 2.52.0
+  TIMEOUT: 2m0s
+  KEY_PEM: ${KEY_PEM}
+  # Instruct Docker not to start over TLS.
+  DOCKER_TLS_CERTDIR: ""
+  CERTIFICATE_PEM: ${CERTIFICATE_PEM}
+  # etc.
