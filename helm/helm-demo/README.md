@@ -1,4 +1,4 @@
-# CRONJOB DEMO
+# HELM DEMO
 Ce projet est une démo complète de manipulation Helm. 
 Il met en avant les principales fonctionnalités de Helm (templating, values, dépendances, hooks, tests, CI/CD) 
 et fournit une petite application de test.
