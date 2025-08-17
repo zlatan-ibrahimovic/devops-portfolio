@@ -1,2 +1,5 @@
 .secret
 .idea
+
+helm/helm-demo/charts/webapp/Chart.lock
+helm/helm-demo/charts/webapp/charts

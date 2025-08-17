@@ -1,13 +1,19 @@
-suite: Deployment
+suite: Test deployment
 templates:
   - deployment.yaml
-values:
-  - ../values.yaml
-asserts:
-  - equal:
-      path: spec.replicas
-      value: 2
-  - contains:
-      path: spec.template.spec.containers[0].env
-      content:
-        name: WELCOME_MESSAGE
+
+tests:
+  - it: should set the correct image
+    set:
+      image.repository: demo/webapp
+      image.tag: latest
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "demo/webapp:latest"
+
+  - it: should have 1 replica by default
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 1

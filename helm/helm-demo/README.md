@@ -64,6 +64,14 @@ Exécuter les tests unitaires Helm :
 ```bash
 make test
 ```
+make test
+
+⚠️ Si tu obtiens une erreur unknown command \"unittest\", cela signifie que le plugin **helm-unittest** 
+n’est pas encore installé. Installe-le avec :
+
+```bash
+helm plugin install https://github.com/helm-unittest/helm-unittest.git
+```
 
 # 🔗 Accès à l’application
 
@@ -109,3 +117,34 @@ kind get clusters
 ```
 
 
+# 🔍 Vérifier le déploiement Helm
+
+
+- La release Helm :
+```bash
+helm list -n webapp
+```
+
+- Les pods :
+```bash
+kubectl get pods -n webapp
+```
+Vérifie que le pod de l’application est Running.
+
+- Les services :
+```bash
+kubectl get svc -n webapp
+```
+Tu devrais voir demo-webapp.
+
+- Déboguer le rendu des manifests :
+```bash
+helm template demo-webapp charts/webapp -n webapp | less
+```
+Cela te permet de vérifier que les manifests générés correspondent bien à ton chart.
+
+- Installer explicitement avec Helm (si le Makefile échoue) :
+
+```bash
+helm install demo-webapp charts/webapp -n webapp --create-namespace
+```
