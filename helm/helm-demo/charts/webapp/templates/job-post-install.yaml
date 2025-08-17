@@ -1,0 +1,16 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "webapp.fullname" . }}-smoke
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: curl
+          image: curlimages/curl:8.8.0
+          args: ["-fsS", "http://{{ include "webapp.fullname" . }}:{{ .Values.service.port }}/"]

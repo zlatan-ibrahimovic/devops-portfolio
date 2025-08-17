@@ -1,0 +1,11 @@
+image:
+  tag: "1.27.0"
+replicaCount: 1
+ingress:
+  hosts:
+    - host: dev.demo.local
+      paths:
+        - path: /
+          pathType: Prefix
+redis:
+  enabled: true

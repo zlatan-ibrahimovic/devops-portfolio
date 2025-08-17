@@ -1,0 +1,29 @@
+stages: [lint, test, package]
+
+variables:
+  CHART_PATH: "charts/webapp"
+
+helm:lint:
+  stage: lint
+  image: alpine/helm:3.14.4
+  script:
+    - helm repo add bitnami https://charts.bitnami.com/bitnami
+    - helm dependency update "$CHART_PATH"
+    - helm lint "$CHART_PATH"
+
+helm:unittest:
+  stage: test
+  image: alpine/helm:3.14.4
+  before_script:
+    - helm plugin install https://github.com/helm-unittest/helm-unittest
+  script:
+    - helm unittest "$CHART_PATH"
+
+helm:package:
+  stage: package
+  image: alpine/helm:3.14.4
+  script:
+    - helm package "$CHART_PATH" -d dist/
+  artifacts:
+    paths:
+      - dist/*.tgz

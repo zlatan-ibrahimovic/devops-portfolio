@@ -1,0 +1,13 @@
+suite: Deployment
+templates:
+  - deployment.yaml
+values:
+  - ../values.yaml
+asserts:
+  - equal:
+      path: spec.replicas
+      value: 2
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: WELCOME_MESSAGE
