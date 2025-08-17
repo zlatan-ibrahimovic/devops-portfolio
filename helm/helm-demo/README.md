@@ -95,3 +95,17 @@ Un pipeline GitLab est fourni :
 + Hook post-install de smoke-test (Job curl).
 
 + Rollback automatique avec --atomic en cas d’échec.
+
+# 🛠️ Dépannage Kind
+
+Supprimer un cluster :
+```bash
+kind delete cluster --name helm-demo
+```
+
+Liste des clusters Kind :
+```bash
+kind get clusters
+```
+
+
